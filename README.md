@@ -1,184 +1,58 @@
-GitOps Workflow Project
+##Local Kubernetes Deployment with Minikube
+ 
+This project demonstrates the process of building a local Kubernetes cluster using Minikube, deploying a sample Nginx application, and managing its lifecycle. The entire task was performed within a GitHub Codespaces environment.
 
+A key part of this exercise involved diagnosing and solving a series of complex networking challenges specific to this cloud-based development environment.
+
+#Objective 🎯
+
+The core objective was to deploy, manage, and scale a web application in a local Kubernetes cluster to understand the fundamentals of Kubernetes deployments and services.
+
+#Tools Used 🛠️
+
+ * GitHub Codespaces: The cloud-based development environment.
+ * Minikube: To create and manage a local Kubernetes cluster.
+ * kubectl: The command-line tool for interacting with the Kubernetes API.
+ * Docker: The container runtime used by Minikube.
    
-
-
----
-
-Project Overview
-
-This project demonstrates a fully automated GitOps workflow, illustrating the integration of version control, CI/CD pipelines, containerization, and deployment best practices.
-Developed as part of the Elevate Labs Internship, this project provides hands-on experience in implementing modern DevOps and GitOps practices for web applications.
-
-The repository contains a simple Flask web application that is:
-
-Fully containerized using Docker.
-
-Automated for CI/CD using GitHub Actions.
-
-Designed for rapid, repeatable deployments following GitOps principles.
-
-
-
----
-
-Project Goal
-
-The main objectives of this project were to:
-
-1. Implement a fully automated CI/CD pipeline from code commit to deployment.
-
-
-2. Build and manage Docker images for a Flask application.
-
-
-3. Ensure reliable, repeatable deployment of containerized applications.
-
-
-4. Gain hands-on experience with GitOps practices and workflow automation.
-
-
-
-
----
-
-Technologies Used
-
-Python 3.9+ – Backend development.
-
-Flask – Web framework for the application.
-
-Docker – Containerization of the application.
-
-GitHub Actions – CI/CD automation and pipeline orchestration.
-
-GitHub – Source code version control.
-
-
-
----
-
-Process & Implementation
-
-The project followed a structured workflow:
-
-1. Repository Setup
-
-Initialized Git repository with proper branching strategy.
-
-Structured project folders to separate application code, Docker configuration, and CI/CD workflows.
-
-
-
-2. Application Development
-
-Developed a minimal Flask web application serving static content.
-
-Added health checks and basic logging for observability.
-
-
-
-3. Containerization with Docker
-
-Created a Dockerfile defining the Flask application environment:
-
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["python", "app.py"]
-
-Built and tested Docker images locally to ensure correct application behavior.
-
-
-
-4. CI/CD Pipeline Implementation
-
-Configured GitHub Actions workflow to:
-
-1. Trigger on push or pull request events.
-
-
-2. Install dependencies and run unit tests.
-
-
-3. Build Docker image and push to DockerHub or GitHub Container Registry.
-
-
-4. Deploy application to staging/production environments (optional).
-
-
-
-
-
-5. Testing & Verification
-
-Verified automated pipeline by triggering multiple commits.
-
-Ensured Docker images were correctly tagged and deployed after each commit.
-
-
-
-
-
----
-
-Challenges & Learnings
-
-Challenge 1: Dependency Management
-
-Issue: Some packages failed to install in CI environment.
-
-Solution: Pin versions in requirements.txt and add caching to GitHub Actions workflow.
-
-
-Challenge 2: Docker Networking in CI
-
-Issue: Containers could not start due to port conflicts in the GitHub Actions runner.
-
-Solution: Dynamically assigned ports and ensured proper container cleanup after each workflow run.
-
-
-Key Takeaways
-
-Deepened understanding of CI/CD pipelines and GitOps workflow.
-
-Learned to troubleshoot containerized applications in automated environments.
-
-Gained practical experience with GitHub Actions, Docker best practices, and deployment automation.
-
-
-
----
-
-Outcome
-
-The final project demonstrates a fully automated GitOps pipeline that:
-
-Ensures every commit is tested, built, and containerized.
-
-Provides repeatable and reliable deployments.
-
-Serves as a professional-grade reference for DevOps practices in Python applications.
-
-
-
----
-
-Next Steps / Future Enhancements
-
-Integrate Kubernetes deployment for orchestration and scaling.
-
-Add automated rollback in case of deployment failures.
-
-Implement advanced monitoring and alerting with Prometheus/Grafana.
-
-
-
----
-
-If you want, I can also create a “super premium, portfolio-ready” version with visuals, badges, and a step-by-step workflow diagram, similar to what top DevOps professionals showcase on GitHub. This would make the README stand out even more.
-
-Do you want me to do that next?
-
+#Process & Implementation Steps ⚙️
+
+The deployment followed these key steps:
+ * Cluster Creation: Minikube and kubectl were installed in the Codespace, and a new Kubernetes cluster was launched using the minikube start command.
+ * Application Deployment: A deployment.yaml file was created to define the desired state for our application. It was configured to run two replicas of the nginx:1.14.2 container image.
+ * Exposing the Application: A service.yaml file was created to expose the Nginx deployment to network traffic. It was configured as a NodePort service, making the application accessible from outside the cluster.
+ * Verification and Scaling: The kubectl get pods command was used to verify that the two Nginx pods were running successfully. The application was then scaled up to 4 replicas using the kubectl scale deployment nginx-deployment --replicas=4 command.
+ * Log Inspection: The kubectl logs <pod-name> command was used to view the application's access logs.
+   
+#Challenges & Troubleshooting Journey 🕵️‍♂️
+Accessing the application within the Codespaces environment proved to be a significant challenge, leading to a deep-dive troubleshooting process.
+
+Problem 1: Connection Timeout
+ * Issue: Initial attempts to access the service using minikube service resulted in an ERR_CONNECTION_TIMED_OUT error.
+ * Reasoning: The command provides an internal cluster IP (192.168.x.x) which is not accessible from a browser outside the Codespace's virtual network.
+ * Solution: The correct NodePort was manually forwarded using the Codespaces "Ports" tab.
+Problem 2: Persistent 502 Bad Gateway Error
+ * Issue: Even with the correct port forwarded, the browser returned a persistent HTTP 502 Bad Gateway error. This indicated that the Codespaces proxy could not get a valid response from the application.
+ * Troubleshooting Steps Taken:
+   * Verified Service Endpoints: Confirmed that the Service was correctly linked to the Pods (kubectl describe service).
+   * Attempted minikube tunnel: Created a network route to expose the service's IP, but this did not resolve the issue.
+   * Restarted Pods: Forced a recreation of all pods (kubectl delete pods -l app=nginx) to resolve any potential zombie processes.
+   * Full Cluster Reset: Completely deleted (minikube delete) and rebuilt the cluster from scratch.
+ * Definitive Solution: After exhausting all standard methods, the issue was identified as a fundamental networking incompatibility between Minikube's service routing and the GitHub Codespaces environment. The solution was to bypass the service network entirely and establish a direct connection to a pod using the kubectl port-forward command.
+   kubectl port-forward <pod-name> 8080:80
+
+   This provided a stable, reliable connection and immediately resolved the 502 error.
+   
+#Deliverables: Screenshots 📸
+Here are the key moments from the task
+
+1. Initial Deployment Verified
+<img width="1366" height="768" alt="Screenshot (4)" src="https://github.com/user-attachments/assets/fa1d2dcd-42a3-4284-98e4-97f53bbb50ac" />
+
+This screenshot shows the output of kubectl get pods right after the initial deployment, confirming that the two Nginx pods were created and in a Running state.
+2. Deployment Scaled to 4 Replicas
+This screenshot shows the output of kubectl get pods after executing the kubectl scale command, verifying that the deployment was successfully scaled to four running pods.
+3. Successful Log Verification
+This final screenshot shows the Nginx access logs retrieved using kubectl logs. These logs were generated by refreshing the browser after a stable connection was finally established using kubectl port-forward.
+Outcome & Key Learnings 🧠
+This task was a successful demonstration of Kubernetes fundamentals. More importantly, it was a valuable real-world exercise in advanced troubleshooting, highlighting the necessity of understanding different network exposure strategies (NodePort vs. port-forward) when working in complex, cloud-based environments.
