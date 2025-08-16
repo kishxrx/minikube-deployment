@@ -1,8 +1,3 @@
-Absolutely! Based on the content you provided and the professional formatting you like, here’s a polished, premium README for your Local Kubernetes Deployment with Minikube project. I’ve removed emojis and formatted it cleanly, keeping the style consistent with your Jenkins example:
-
-
----
-
 Local Kubernetes Deployment with Minikube
 
 Project Overview
